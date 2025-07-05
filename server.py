@@ -9,9 +9,9 @@ for agent management, tool calls, and payments.
 import uuid
 import json
 import requests
-from datetime import datetime
 from typing import Dict, Any, List, Optional
-from mcp.server.fastmcp import FastMCP
+from datetime import datetime
+from fastmcp import FastMCP
 
 from database import SessionLocal, Agent, ToolCall, Payment, Token
 
