@@ -21,7 +21,7 @@ services:
     ports:
       - "8000:8000"
     platform: linux/amd64
-    image: ghcr.io/PedroRosalba/eth-global-cannes/backend:{latest}
+    image: ghcr.io/eth-global-cannes/backend:{latest}
     environment:
       - API_KEY=${API_KEY}
       - DATABASE_URL=${DATABASE_URL}
