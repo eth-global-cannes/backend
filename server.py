@@ -33,14 +33,16 @@ def agent_list() -> str:
         
         agent_list = []
         for agent in agents:
-            tools = list(agent.tool_schema.get("tools", {}).keys())
             agent_data = {
                 "id": agent.id,
                 "name": agent.name,
-                "description": agent.description,
-                "pricing": agent.pricing,
-                "webhook_url": agent.webhook_url,
-                "available_tools": tools,
+                "imageUrl": agent.imageUrl,
+                "price": agent.price,
+                "apiKey": agent.apiKey,
+                "webhookUrl": agent.webhookUrl,
+                "toolCallsExampleJson": agent.toolCallsExampleJson,
+                "agentOwner": agent.agentOwner,
+                "is_active": agent.is_active,
                 "created_at": agent.created_at.isoformat(),
                 "updated_at": agent.updated_at.isoformat()
             }
@@ -70,12 +72,13 @@ def agent_get(agent_id: str) -> str:
         
         agent_data = {
             "id": agent.id,
-            "user_id": agent.user_id,
             "name": agent.name,
-            "description": agent.description,
-            "webhook_url": agent.webhook_url,
-            "tool_schema": agent.tool_schema,
-            "pricing": agent.pricing,
+            "imageUrl": agent.imageUrl,
+            "price": agent.price,
+            "apiKey": agent.apiKey,
+            "webhookUrl": agent.webhookUrl,
+            "toolCallsExampleJson": agent.toolCallsExampleJson,
+            "agentOwner": agent.agentOwner,
             "is_active": agent.is_active,
             "created_at": agent.created_at.isoformat(),
             "updated_at": agent.updated_at.isoformat()
@@ -193,17 +196,26 @@ def agent_call_tool(agent_id: str, tool_name: str, parameters: Dict[str, Any], c
         if not agent:
             return {"error": "Agent not found"}
         
-        # Validate tool exists in agent's schema
-        if tool_name not in agent.tool_schema.get("tools", {}):
-            return {"error": f"Tool '{tool_name}' not found in agent schema"}
+        # Parse the tool calls example to validate available tools
+        try:
+            import json as json_module
+            tool_calls_data = json_module.loads(agent.toolCallsExampleJson)
+            available_tools = tool_calls_data.get("available_tools", [])
+            if tool_name not in available_tools:
+                return {"error": f"Tool '{tool_name}' not found in agent's available tools"}
+        except (json_module.JSONDecodeError, KeyError):
+            # If parsing fails, allow the tool call to proceed
+            pass
         
         # Create tool call record
+        # Convert price from wei to float for cost calculation
+        cost_in_eth = float(agent.price) / 1e18
         tool_call = ToolCall(
             agent_id=agent_id,
             caller_user_id=caller_user_id,
             tool_name=tool_name,
             parameters=parameters,
-            cost=agent.pricing,
+            cost=cost_in_eth,
             payment_status="pending"
         )
         
@@ -213,7 +225,7 @@ def agent_call_tool(agent_id: str, tool_name: str, parameters: Dict[str, Any], c
         
         # Execute via webhook if available
         result = None
-        if agent.webhook_url:
+        if agent.webhookUrl:
             try:
                 webhook_payload = {
                     "tool_name": tool_name,
@@ -222,7 +234,7 @@ def agent_call_tool(agent_id: str, tool_name: str, parameters: Dict[str, Any], c
                 }
                 
                 response = requests.post(
-                    agent.webhook_url,
+                    agent.webhookUrl,
                     json=webhook_payload,
                     timeout=30.0
                 )
@@ -250,7 +262,7 @@ def agent_call_tool(agent_id: str, tool_name: str, parameters: Dict[str, Any], c
             "agent_id": agent_id,
             "tool_name": tool_name,
             "result": result,
-            "cost": agent.pricing,
+            "cost": cost_in_eth,
             "status": "completed"
         }
         

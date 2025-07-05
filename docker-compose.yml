@@ -18,16 +18,18 @@ services:
       retries: 5
 
   app:
-    build: .
     ports:
       - "8000:8000"
+    platform: linux/amd64
+    image: ghcr.io/PedroRosalba/eth-global-cannes/backend:{latest}
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/agents_db
-      MCP_SERVER_URL: http://localhost:8001
+      - API_KEY=${API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - MCP_SERVER_URL=${MCP_SERVER_URL}
     depends_on:
       postgres:
         condition: service_healthy
-    restart: unless-stopped
+    restart: unless-stopped 
 
 volumes:
   postgres_data: 

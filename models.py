@@ -3,21 +3,23 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime
 
 class AgentRegisterRequest(BaseModel):
-    user_id: str = Field(..., description="ID of the user registering the agent")
     name: str = Field(..., description="Name of the agent")
-    description: Optional[str] = Field(None, description="Description of the agent")
-    webhook_url: Optional[str] = Field(None, description="Webhook URL for the agent")
-    tool_schema: Dict[str, Any] = Field(..., description="JSON schema of the tools")
-    pricing: float = Field(..., description="Price per tool call")
+    imageUrl: str = Field(..., description="Image URL for the agent")
+    price: int = Field(..., description="Price to use the agent, in wei (1 ether = 1e18 wei)")
+    apiKey: str = Field(..., description="API key for the agent (WARNING: Stored publicly)")
+    webhookUrl: str = Field(..., description="Webhook URL for the agent")
+    toolCallsExampleJson: str = Field(..., description="Example of the agent's tool call structure")
+    agentOwner: str = Field(..., description="The address of the user who registered the agent")
 
 class AgentResponse(BaseModel):
     id: str
-    user_id: str
     name: str
-    description: Optional[str]
-    webhook_url: Optional[str]
-    tool_schema: Dict[str, Any]
-    pricing: float
+    imageUrl: str
+    price: int
+    apiKey: str
+    webhookUrl: str
+    toolCallsExampleJson: str
+    agentOwner: str
     is_active: bool
     created_at: datetime
     updated_at: datetime

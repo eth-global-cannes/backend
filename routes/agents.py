@@ -19,39 +19,38 @@ async def register_agent(
     db: Session = Depends(get_db)
 ):
     """
-    Register a new agent with tool schema and pricing
+    Register a new agent with blockchain-compatible structure
     """
     try:
         # Validate required fields
-        if not agent_data.name or not agent_data.tool_schema or not agent_data.pricing or not agent_data.user_id:
+        if not agent_data.name or not agent_data.imageUrl or not agent_data.webhookUrl or not agent_data.agentOwner:
             raise HTTPException(status_code=400, detail="Missing required fields")
         
-        # Validate tool schema structure
-        if not isinstance(agent_data.tool_schema, dict):
-            raise HTTPException(status_code=400, detail="Tool schema must be a valid JSON object")
+        # Validate price (must be positive)
+        if agent_data.price <= 0:
+            raise HTTPException(status_code=400, detail="Price must be greater than 0")
         
-        # Validate pricing
-        if agent_data.pricing <= 0:
-            raise HTTPException(status_code=400, detail="Pricing must be greater than 0")
+        # Validate Ethereum address format (basic validation)
+        if not agent_data.agentOwner.startswith("0x") or len(agent_data.agentOwner) != 42:
+            raise HTTPException(status_code=400, detail="Invalid Ethereum address format")
         
         # Create new agent
         agent_id = str(uuid.uuid4())
         
         new_agent = Agent(
             id=agent_id,
-            user_id=agent_data.user_id,
             name=agent_data.name,
-            description=agent_data.description,
-            webhook_url=agent_data.webhook_url,
-            tool_schema=agent_data.tool_schema,
-            pricing=agent_data.pricing
+            imageUrl=agent_data.imageUrl,
+            price=agent_data.price,
+            apiKey=agent_data.apiKey,
+            webhookUrl=agent_data.webhookUrl,
+            toolCallsExampleJson=agent_data.toolCallsExampleJson,
+            agentOwner=agent_data.agentOwner
         )
         
         db.add(new_agent)
         db.commit()
         db.refresh(new_agent)
-        
-        # TODO: Generate Coinbase checkout in next step
         
         return {
             "agent_id": agent_id,
@@ -66,7 +65,7 @@ async def register_agent(
 
 @router.get("/", response_model=AgentListResponse)
 async def list_agents(
-    user_id: Optional[str] = Query(None, description="Filter by user ID"),
+    agent_owner: Optional[str] = Query(None, description="Filter by agent owner address"),
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
     db: Session = Depends(get_db)
@@ -77,8 +76,8 @@ async def list_agents(
     try:
         query = db.query(Agent).filter(Agent.is_active == True)
         
-        if user_id:
-            query = query.filter(Agent.user_id == user_id)
+        if agent_owner:
+            query = query.filter(Agent.agentOwner == agent_owner)
         
         total = query.count()
         
@@ -87,12 +86,13 @@ async def list_agents(
         agent_responses = [
             AgentResponse(
                 id=agent.id,
-                user_id=agent.user_id,
                 name=agent.name,
-                description=agent.description,
-                webhook_url=agent.webhook_url,
-                tool_schema=agent.tool_schema,
-                pricing=agent.pricing,
+                imageUrl=agent.imageUrl,
+                price=agent.price,
+                apiKey=agent.apiKey,
+                webhookUrl=agent.webhookUrl,
+                toolCallsExampleJson=agent.toolCallsExampleJson,
+                agentOwner=agent.agentOwner,
                 is_active=agent.is_active,
                 created_at=agent.created_at,
                 updated_at=agent.updated_at
@@ -124,12 +124,13 @@ async def get_agent(agent_id: str, db: Session = Depends(get_db)):
         
         return AgentResponse(
             id=agent.id,
-            user_id=agent.user_id,
             name=agent.name,
-            description=agent.description,
-            webhook_url=agent.webhook_url,
-            tool_schema=agent.tool_schema,
-            pricing=agent.pricing,
+            imageUrl=agent.imageUrl,
+            price=agent.price,
+            apiKey=agent.apiKey,
+            webhookUrl=agent.webhookUrl,
+            toolCallsExampleJson=agent.toolCallsExampleJson,
+            agentOwner=agent.agentOwner,
             is_active=agent.is_active,
             created_at=agent.created_at,
             updated_at=agent.updated_at

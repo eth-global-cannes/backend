@@ -14,12 +14,13 @@ class Agent(Base):
     __tablename__ = "agents"
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String, nullable=False)
     name = Column(String, nullable=False)
-    description = Column(String)
-    webhook_url = Column(String)
-    tool_schema = Column(JSON, nullable=False)
-    pricing = Column(Float, nullable=False)
+    imageUrl = Column(String, nullable=False)
+    price = Column(Integer, nullable=False)  # Price in wei
+    apiKey = Column(String, nullable=False)
+    webhookUrl = Column(String, nullable=False)
+    toolCallsExampleJson = Column(String, nullable=False)
+    agentOwner = Column(String, nullable=False)  # Address of the owner
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
