@@ -5,7 +5,6 @@ import uvicorn
 
 from database import create_tables
 from routes import agents, mcp
-from mcp_server import mcp_server
 
 # Create tables on startup
 @asynccontextmanager

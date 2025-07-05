@@ -47,7 +47,7 @@ TOOLS = {
 @app.post("/webhook")
 async def handle_tool_call(request: ToolCallRequest):
     """
-    Handle incoming tool calls from the agent server
+    Handle incoming tool calls from the MCP server
     """
     try:
         tool_name = request.tool_name

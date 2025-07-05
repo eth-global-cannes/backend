@@ -23,7 +23,6 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/agents_db
-      SECRET_KEY: your-secret-key-change-in-production
       MCP_SERVER_URL: http://localhost:8001
     depends_on:
       postgres:

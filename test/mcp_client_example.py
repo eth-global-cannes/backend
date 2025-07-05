@@ -1,227 +1,237 @@
 #!/usr/bin/env python3
 """
-MCP Client Example
+MCP Client Example for FastMCP Server
 
-This demonstrates how to use the MCP server with proper authentication
-and JSON-RPC 2.0 protocol.
+This demonstrates how to interact with the FastMCP server to:
+1. Use resources (GET-like operations)
+2. Use tools (POST-like operations)
 """
 
-import requests
 import json
-import uuid
-from typing import Dict, Any, Optional
+import requests
+from typing import Dict, Any
 
 class MCPClient:
-    def __init__(self, server_url: str, token: str):
+    def __init__(self, server_url: str = "http://localhost:8000"):
         self.server_url = server_url.rstrip('/')
-        self.token = token
         self.session = requests.Session()
         self.session.headers.update({
-            'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'
         })
     
-    def call_tool(self, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Call a tool using JSON-RPC 2.0 protocol
-        """
-        request_id = str(uuid.uuid4())
-        
-        payload = {
-            "jsonrpc": "2.0",
-            "method": tool_name,
-            "params": params,
-            "id": request_id
-        }
-        
+    # RESOURCES (GET-like operations)
+    
+    def get_agent_list(self) -> Dict[str, Any]:
+        """Get list of all agents"""
         try:
-            response = self.session.post(self.server_url, json=payload)
+            # This would be an MCP resource call in a real MCP client
+            # For now, using the FastAPI endpoint
+            response = self.session.get(f"{self.server_url}/api/agents/")
             response.raise_for_status()
-            
-            result = response.json()
-            
-            if "error" in result:
-                return {
-                    "success": False,
-                    "error": result["error"],
-                    "id": result.get("id")
-                }
-            else:
-                return {
-                    "success": True,
-                    "result": result.get("result"),
-                    "id": result.get("id")
-                }
-                
-        except requests.exceptions.RequestException as e:
-            return {
-                "success": False,
-                "error": f"Request failed: {str(e)}"
+            return response.json()
+        except Exception as e:
+            return {"error": str(e)}
+    
+    def get_agent_details(self, agent_id: str) -> Dict[str, Any]:
+        """Get details of a specific agent"""
+        try:
+            response = self.session.get(f"{self.server_url}/api/agents/{agent_id}")
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            return {"error": str(e)}
+    
+    def get_tool_call_status(self, tool_call_id: str) -> Dict[str, Any]:
+        """Get status of a tool call"""
+        try:
+            response = self.session.get(f"{self.server_url}/api/tokens/tool-call/{tool_call_id}")
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            return {"error": str(e)}
+    
+    # TOOLS (POST-like operations - these would use the MCP server)
+    
+    def register_agent(self, agent_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Register a new agent"""
+        try:
+            response = self.session.post(f"{self.server_url}/api/agents/register", json=agent_data)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            return {"error": str(e)}
+    
+    def create_token(self, agent_id: str, user_id: str, expires_in_days: int = 30) -> Dict[str, Any]:
+        """Create an access token for an agent"""
+        try:
+            token_data = {
+                "agent_id": agent_id,
+                "user_id": user_id,
+                "expires_in_days": expires_in_days
             }
-        except json.JSONDecodeError as e:
-            return {
-                "success": False,
-                "error": f"Invalid JSON response: {str(e)}"
+            response = self.session.post(f"{self.server_url}/api/tokens/create", json=token_data)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            return {"error": str(e)}
+
+def demo_mcp_workflow():
+    """Demonstrate a complete MCP workflow"""
+    print("🚀 MCP Client Demo - FastMCP Server Integration")
+    print("=" * 60)
+    
+    client = MCPClient()
+    
+    # Step 1: Register an agent
+    print("\n📝 Step 1: Registering an agent...")
+    agent_data = {
+        "user_id": "demo-user-123",
+        "name": "Demo Calculator Agent",
+        "description": "A calculator agent for MCP demo",
+        "webhook_url": "http://localhost:8001/webhook",
+        "tool_schema": {
+            "tools": {
+                "add": {
+                    "description": "Add two numbers",
+                    "parameters": {
+                        "a": "number",
+                        "b": "number"
+                    }
+                },
+                "multiply": {
+                    "description": "Multiply two numbers",
+                    "parameters": {
+                        "x": "number",
+                        "y": "number"
+                    }
+                }
             }
-
-def demo_mcp_client():
-    """
-    Demonstrate MCP client usage
-    """
-    print("🔧 MCP Client Demo")
-    print("=" * 40)
-    
-    # You'll need to get a token first from the token API
-    # This is a placeholder - replace with an actual token
-    token = "your-token-here"
-    mcp_server_url = "http://localhost:8080"
-    
-    client = MCPClient(mcp_server_url, token)
-    
-    # Example tool calls
-    test_cases = [
-        {
-            "name": "Addition",
-            "tool": "add",
-            "params": {"a": 10, "b": 20}
         },
-        {
-            "name": "Multiplication",
-            "tool": "multiply",
-            "params": {"x": 7, "y": 8}
-        },
-        {
-            "name": "Division",
-            "tool": "divide",
-            "params": {"a": 100, "b": 5}
-        }
-    ]
-    
-    for test_case in test_cases:
-        print(f"\n📝 Testing {test_case['name']}:")
-        print(f"   Tool: {test_case['tool']}")
-        print(f"   Params: {test_case['params']}")
-        
-        result = client.call_tool(test_case['tool'], test_case['params'])
-        
-        if result['success']:
-            print(f"   ✅ Result: {result['result']}")
-        else:
-            print(f"   ❌ Error: {result['error']}")
-
-def create_test_token(agent_id: str, user_id: str) -> Optional[str]:
-    """
-    Create a test token for the demo
-    """
-    token_api_url = "http://localhost:8000/api/tokens/create"
-    
-    payload = {
-        "agent_id": agent_id,
-        "user_id": user_id,
-        "expires_in_days": 7
+        "pricing": 0.02
     }
     
-    try:
-        response = requests.post(token_api_url, json=payload)
-        response.raise_for_status()
-        
-        result = response.json()
-        return result.get("token")
-        
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Failed to create token: {e}")
-        return None
-
-def full_demo():
-    """
-    Complete demo including token creation
-    """
-    print("🚀 Complete MCP Demo")
-    print("=" * 50)
-    
-    # First, you need to register an agent and get its ID
-    # This is a placeholder - replace with actual agent ID
-    agent_id = "your-agent-id-here"
-    user_id = "demo-user-123"
-    
-    print("📝 Creating access token...")
-    token = create_test_token(agent_id, user_id)
-    
-    if not token:
-        print("❌ Could not create token. Make sure:")
-        print("   1. Agent Registry server is running on localhost:8000")
-        print("   2. You have a registered agent")
-        print("   3. Replace 'your-agent-id-here' with actual agent ID")
+    agent_result = client.register_agent(agent_data)
+    if "error" in agent_result:
+        print(f"❌ Failed to register agent: {agent_result['error']}")
         return
     
-    print(f"✅ Token created: {token[:16]}...")
+    agent_id = agent_result.get("agent_id")
+    if not agent_id:
+        print("❌ Agent registration failed - no agent ID returned")
+        return
     
-    # Now use the MCP client
-    print("\n🔧 Using MCP Client...")
-    mcp_server_url = "http://localhost:8080"
+    print(f"✅ Agent registered with ID: {agent_id}")
     
-    client = MCPClient(mcp_server_url, token)
-    
-    # Test the client
-    result = client.call_tool("add", {"a": 15, "b": 25})
-    
-    if result['success']:
-        print(f"✅ MCP Call successful: {result['result']}")
+    # Step 2: List all agents
+    print("\n📋 Step 2: Listing all agents...")
+    agents = client.get_agent_list()
+    if "error" in agents:
+        print(f"❌ Failed to list agents: {agents['error']}")
     else:
-        print(f"❌ MCP Call failed: {result['error']}")
+        print(f"✅ Found {agents.get('total', 0)} agents")
+        for agent in agents.get('agents', []):
+            print(f"   - {agent['name']} (ID: {agent['id'][:8]}...)")
+    
+    # Step 3: Get agent details
+    print(f"\n🔍 Step 3: Getting details for agent {agent_id[:8]}...")
+    agent_details = client.get_agent_details(agent_id)
+    if "error" in agent_details:
+        print(f"❌ Failed to get agent details: {agent_details['error']}")
+    else:
+        print(f"✅ Agent: {agent_details['name']}")
+        print(f"   Tools: {list(agent_details['tool_schema']['tools'].keys())}")
+        print(f"   Pricing: ${agent_details['pricing']}")
+    
+    # Step 4: Create access token
+    print(f"\n🔐 Step 4: Creating access token...")
+    token_result = client.create_token(agent_id, "demo-caller-456", 7)
+    if "error" in token_result:
+        print(f"❌ Failed to create token: {token_result['error']}")
+        return
+    
+    access_token = token_result.get("token")
+    if not access_token:
+        print("❌ Token creation failed - no token returned")
+        return
+    
+    print(f"✅ Access token created: {access_token[:16]}...")
+    
+    print("\n🎉 Demo completed successfully!")
+    print(f"Agent ID: {agent_id}")
+    print(f"Access Token: {access_token[:16]}...")
+    print("\nNext steps:")
+    print("1. Start the MCP server: python server.py")
+    print("2. Use the FastMCP resources and tools")
+    print("3. Call agent tools via the MCP server")
 
-def curl_examples():
-    """
-    Show curl examples for MCP calls
-    """
-    print("\n📚 cURL Examples for MCP Server:")
+def show_mcp_usage_examples():
+    """Show examples of how to use MCP resources and tools"""
+    print("\n📚 MCP Server Usage Examples")
     print("=" * 40)
     
-    examples = [
-        {
-            "name": "Add two numbers",
-            "curl": """curl -X POST http://localhost:8080/ \\
-  -H "Authorization: Bearer YOUR_TOKEN_HERE" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "jsonrpc": "2.0",
-    "method": "add",
-    "params": {"a": 10, "b": 20},
-    "id": "test-123"
-  }'"""
-        },
-        {
-            "name": "Multiply two numbers",
-            "curl": """curl -X POST http://localhost:8080/ \\
-  -H "Authorization: Bearer YOUR_TOKEN_HERE" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "jsonrpc": "2.0",
-    "method": "multiply",
-    "params": {"x": 7, "y": 8},
-    "id": "test-456"
-  }'"""
-        }
+    print("\n🔗 RESOURCES (GET-like operations):")
+    resources = [
+        ("agent://list", "List all agents"),
+        ("agent://get/{agent_id}", "Get specific agent details"),
+        ("tool_call://status/{tool_call_id}", "Get tool call status"),
+        ("payment://get_status/{identifier}", "Get payment status"),
+        ("user://tokens/{user_id}", "Get user tokens")
     ]
     
-    for example in examples:
-        print(f"\n{example['name']}:")
-        print(example['curl'])
+    for resource, description in resources:
+        print(f"   📄 {resource}")
+        print(f"      {description}")
+    
+    print("\n🛠️ TOOLS (POST-like operations):")
+    tools = [
+        ("agent_call_tool", "Call a tool on an agent"),
+        ("payment_create", "Create a payment for tool call"),
+        ("tool_call_poll", "Poll tool call completion"),
+        ("tool_call_finalize", "Finalize off-chain tool call")
+    ]
+    
+    for tool, description in tools:
+        print(f"   🔧 {tool}")
+        print(f"      {description}")
+    
+    print("\n💡 Example tool call:")
+    print("""
+    # Using FastMCP client (pseudo-code)
+    result = mcp_client.call_tool(
+        'agent_call_tool',
+        {
+            'agent_id': 'your-agent-id',
+            'tool_name': 'add',
+            'parameters': {'a': 10, 'b': 20},
+            'caller_user_id': 'user123'
+        }
+    )
+    """)
 
-if __name__ == "__main__":
+def main():
+    """Main function"""
     print("Select an option:")
-    print("1. Simple MCP Client Demo (requires token)")
-    print("2. Full Demo (creates token and calls MCP)")
-    print("3. Show cURL Examples")
+    print("1. Run complete MCP workflow demo")
+    print("2. Show MCP usage examples")
+    print("3. Both")
     
     choice = input("Enter choice (1-3): ").strip()
     
     if choice == "1":
-        demo_mcp_client()
+        demo_mcp_workflow()
     elif choice == "2":
-        full_demo()
+        show_mcp_usage_examples()
     elif choice == "3":
-        curl_examples()
+        demo_mcp_workflow()
+        show_mcp_usage_examples()
     else:
-        print("Invalid choice. Showing cURL examples...")
-        curl_examples() 
+        print("Invalid choice. Running workflow demo...")
+        demo_mcp_workflow()
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n⏹️  Demo interrupted by user")
+    except Exception as e:
+        print(f"❌ Demo error: {e}") 
