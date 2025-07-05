@@ -5,7 +5,6 @@ import uvicorn
 
 from database import create_tables
 from routes import agents
-from server import mcp
 
 # Create tables on startup
 @asynccontextmanager
@@ -35,8 +34,6 @@ app.add_middleware(
 
 # Include routers
 app.include_router(agents.router)
-app.include_router(mcp.router)  # Now handles tokens and payments
-
 # Root endpoint
 @app.get("/")
 async def root():
