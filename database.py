@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, String, DateTime, JSON, Float, Boolean, Integer
+from sqlalchemy import create_engine, Column, String, DateTime, JSON, Float, Boolean, Integer, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
@@ -15,12 +15,13 @@ class Agent(Base):
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String, nullable=False)
-    imageUrl = Column(String, nullable=False)
-    price = Column(Integer, nullable=False)  # Price in wei
-    apiKey = Column(String, nullable=False)
-    webhookUrl = Column(String, nullable=False)
-    toolCallsExampleJson = Column(String, nullable=False)
-    agentOwner = Column(String, nullable=False)  # Address of the owner
+    image = Column(String, nullable=False)  # Changed from imageUrl to image
+    description = Column(Text, nullable=False)  # New field
+    type = Column(String, nullable=False)  # New field (per-use, subscription, etc.)
+    price = Column(String, nullable=False)  # Changed from Integer to String
+    url = Column(String, nullable=False)  # New field
+    endpoints = Column(JSON, nullable=False)  # New field to store endpoints as JSON
+    agentOwner = Column(String, nullable=True)  # Address of the owner, now optional
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
