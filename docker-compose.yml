@@ -1,35 +1,12 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: agents_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   app:
+    image: ghcr.io/eth-global-cannes/backend:latest
     ports:
       - "8000:8000"
-    platform: linux/amd64
-    image: ghcr.io/eth-global-cannes/backend:latest
     environment:
       - API_KEY=${API_KEY}
       - DATABASE_URL=${DATABASE_URL}
       - MCP_SERVER_URL=${MCP_SERVER_URL}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped 
-
-volumes:
-  postgres_data: 
+    restart: unless-stopped

@@ -15,30 +15,6 @@ import subprocess
 import time
 from pathlib import Path
 
-def create_env_file():
-    """Create a .env file with default values"""
-    env_content = """# Database Configuration
-DATABASE_URL=postgresql://localhost/agents_db
-
-# Security
-SECRET_KEY=your-secret-key-here-change-in-production
-
-# Coinbase Integration
-COINBASE_API_KEY=your-coinbase-api-key
-COINBASE_WEBHOOK_SECRET=your-coinbase-webhook-secret
-
-# MCP Server Configuration
-MCP_SERVER_URL=http://localhost:8001
-"""
-    
-    env_file = Path('.env')
-    if not env_file.exists():
-        with open(env_file, 'w') as f:
-            f.write(env_content)
-        print("✅ Created .env file")
-    else:
-        print("⚠️  .env file already exists")
-
 def check_python_version():
     """Check if Python version is adequate"""
     if sys.version_info < (3, 8):
@@ -122,9 +98,6 @@ def main():
     
     # Check Python version
     check_python_version()
-    
-    # Create .env file
-    create_env_file()
     
     # Install dependencies
     install_dependencies()
