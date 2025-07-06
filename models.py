@@ -2,24 +2,37 @@ from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 
+class ApiParam(BaseModel):
+    id: str = Field(..., description="Unique identifier for the parameter")
+    key: str = Field(..., description="Parameter key name")
+    value: str = Field(..., description="Default value for the parameter")
+    type: str = Field(..., description="Parameter type (string, number, boolean, etc.)")
+
+class Endpoint(BaseModel):
+    id: str = Field(..., description="Unique identifier for the endpoint")
+    endpoint: str = Field(..., description="Endpoint path (e.g., '/send')")
+    apiParams: List[ApiParam] = Field(..., description="List of API parameters for this endpoint")
+
 class AgentRegisterRequest(BaseModel):
     name: str = Field(..., description="Name of the agent")
-    imageUrl: str = Field(..., description="Image URL for the agent")
-    price: int = Field(..., description="Price to use the agent, in wei (1 ether = 1e18 wei)")
-    apiKey: str = Field(..., description="API key for the agent (WARNING: Stored publicly)")
-    webhookUrl: str = Field(..., description="Webhook URL for the agent")
-    toolCallsExampleJson: str = Field(..., description="Example of the agent's tool call structure")
-    agentOwner: str = Field(..., description="The address of the user who registered the agent")
+    image: str = Field(..., description="Image URL for the agent")
+    description: str = Field(..., description="Description of the agent")
+    type: str = Field(..., description="Agent type (e.g., 'per-use')")
+    price: str = Field(..., description="Price to use the agent")
+    url: str = Field(..., description="Agent URL")
+    endpoints: List[Endpoint] = Field(..., description="List of available endpoints")
+    agentOwner: Optional[str] = Field(None, description="The address of the user who registered the agent")
 
 class AgentResponse(BaseModel):
     id: str
     name: str
-    imageUrl: str
-    price: int
-    apiKey: str
-    webhookUrl: str
-    toolCallsExampleJson: str
-    agentOwner: str
+    image: str
+    description: str
+    type: str
+    price: str
+    url: str
+    endpoints: List[Endpoint]
+    agentOwner: Optional[str]
     is_active: bool
     created_at: datetime
     updated_at: datetime
